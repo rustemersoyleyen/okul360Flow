@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proje Ödevi Seçim ve Akıllı Dağıtım Sistemi</title>
+  <meta name="description" content="Okul öğrencileri için 5 tercihli proje ödevi seçim ve öğretmenler için otomatik akıllı yerleştirme sistemi.">
+  <link rel="icon" type="image/webp" href="okul-360-logo.webp">
+  
+  <!-- CSS Stilleri -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Firebase v8 Compat SDK (GitHub Pages doğrudan tarayıcı desteği için) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+</head>
+<body>
+
+  <!-- ========================================================================
+       ÜST GEZİNME ÇUBUĞU (NAVBAR)
+       ======================================================================== -->
+  <header class="navbar">
+    <div class="nav-brand" onclick="app.showPortalView()">
+      <div class="brand-icon">
+        <img src="okul-360-logo.webp" alt="Okul360Flow" class="brand-img-logo">
+      </div>
+      <div class="brand-text">
+        <h1 id="navSchoolTitle">Okul360Flow</h1>
+        <p id="navTermTitle">Proje Ödevi Tercih & Akıllı Dağıtım Portalı</p>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <!-- Veritabanı Durumu (Sadece Yönetici Panelinde Görünür) -->
+      <div id="dbStatusBadge" class="badge-status offline" title="Veritabanı durumu" style="display: none;">
+        <span class="badge-dot pulse"></span>
+        <span id="dbStatusText">Yerel Depolama (Demo Modu)</span>
+      </div>
+
+      <!-- Ayarlar & Firebase Butonu (Sadece Yönetici Panelinde Görünür) -->
+      <button class="btn btn-outline btn-sm" id="navDbConfigBtn" onclick="app.openFirebaseModal()" title="Firebase ve Sistem Ayarları" style="display: none;">
+        ⚙️ Veritabanı Ayarı
+      </button>
+
+      <!-- Çıkış Yap Butonu (Giriş yapıldığında görünür) -->
+      <button id="navLogoutBtn" class="btn btn-secondary btn-sm" style="display: none;" onclick="app.logout()">
+        🚪 Güvenli Çıkış
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       ANA UYGULAMA ALANI (CONTAINER)
+       ======================================================================== -->
+  <main class="app-container">
+
+    <!-- ----------------------------------------------------------------------
+         GÖRÜNÜM 1: PORTAL GİRİŞ EKRANI (ROL SEÇİMİ)
+         ---------------------------------------------------------------------- -->
+    <section id="viewPortal" class="view-section active">
+      <div class="hero-header" style="text-align: center;">
+        <div style="margin-bottom: 1.25rem;">
+          <img src="okul-360-logo.webp" alt="Okul360Flow Logo" style="max-height: 110px; width: auto; object-fit: contain; filter: drop-shadow(0 6px 16px rgba(79, 70, 229, 0.12));">
+        </div>
+        <span class="hero-tag">✨ 5 Tercihli Adil Dağıtım Algoritması</span>
+        <h2>Proje Ödevi Seçim ve Yerleştirme Sistemi</h2>
+        <p>Lütfen işlem yapmak istediğiniz kullanıcı türünü seçerek giriş yapınız.</p>
+      </div>
+
+      <div class="portal-grid">
+        
+        <!-- Öğrenci Giriş Kartı -->
+        <div class="portal-card student">
+          <div class="card-icon-wrapper">🎓</div>
+          <h3>Öğrenci Portalı</h3>
+          <p class="desc">Sınıfınıza tanımlı derslerden 5 tercih yapın ve yerleştirme sonucunuzu öğrenin.</p>
+          
+          <form class="auth-form" onsubmit="app.handleStudentLogin(event)">
+            <div class="form-group">
+              <label for="studentNumberInput">Okul Numarası</label>
+              <input type="text" id="studentNumberInput" class="form-control" placeholder="Örn: 101" required>
+            </div>
+            <div class="form-group">
+              <label for="studentPassInput">Öğrenci Şifresi</label>
+              <input type="password" id="studentPassInput" class="form-control" placeholder="••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              Öğrenci Girişi Yap
+            </button>
+            <a href="ogrenci.html" class="btn btn-outline btn-block" style="margin-top: 0.6rem; font-weight: 700; border-color: var(--primary); color: var(--primary); display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+              <span>📱</span> Ayrı Öğrenci Giriş Sayfası (ogrenci.html)
+            </a>
+          </form>
+        </div>
+
+        <!-- Sınıf Öğretmeni Giriş Kartı -->
+        <div class="portal-card teacher">
+          <div class="card-icon-wrapper">👨‍🏫</div>
+          <h3>Sınıf Öğretmeni Portalı</h3>
+          <p class="desc">Sınıfınızın tercihlerini inceleyin, kontenjan kısıtlarını belirleyin ve dağıtımı gerçekleştirin.</p>
+          
+          <form class="auth-form" onsubmit="app.handleTeacherLogin(event)">
+            <div class="form-group">
+              <label for="teacherClassSelect">Sınıfınız</label>
+              <select id="teacherClassSelect" class="form-control" required>
+                <option value="">Sınıf Seçiniz...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="teacherPassInput">Öğretmen Şifresi</label>
+              <input type="password" id="teacherPassInput" class="form-control" placeholder="••••" required>
+            </div>
+            <button type="submit" class="btn btn-success btn-block">
+              Öğretmen Girişi Yap
+            </button>
+          </form>
+        </div>
+
+        <!-- Okul İdaresi Giriş Kartı -->
+        <div class="portal-card admin">
+          <div class="card-icon-wrapper">🛡️</div>
+          <h3>İdare / Yönetici Portalı</h3>
+          <p class="desc">Tüm sınıfları, öğretmenleri, dersleri ve öğrenci kayıtlarını yönetin ve kontrol edin.</p>
+          
+          <form class="auth-form" onsubmit="app.handleAdminLogin(event)">
+            <div class="form-group">
+              <label for="adminUsernameInput">Yönetici Kullanıcı Adı</label>
+              <input type="text" id="adminUsernameInput" class="form-control" value="admin" required>
+            </div>
+            <div class="form-group">
+              <label for="adminPassInput">Yönetici Şifresi</label>
+              <input type="password" id="adminPassInput" class="form-control" placeholder="••••" required>
+            </div>
+            <button type="submit" class="btn btn-secondary btn-block">
+              İdare Girişi Yap
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ----------------------------------------------------------------------
+         GÖRÜNÜM 2: ÖĞRENCİ PANELİ
+         ---------------------------------------------------------------------- -->
+    <section id="viewStudent" class="view-section">
+      
+      <!-- Öğrenci Bilgi Başlığı -->
+      <div class="panel-header-card">
+        <div class="panel-user-info">
+          <div class="user-avatar" id="studentAvatar">Ö</div>
+          <div class="user-details">
+            <h2 id="studentFullName">Öğrenci Adı Soyadı</h2>
+            <div class="user-meta-tags">
+              <span class="tag" id="studentTagClass">Sınıf: 9-A</span>
+              <span class="tag tag-secondary" id="studentTagNumber">No: 101</span>
+              <span class="tag tag-success" id="studentTagStatus">Tercih Yapıldı</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <button class="btn btn-outline btn-sm" onclick="app.logout()">Çıkış Yap</button>
+        </div>
+      </div>
+
+      <!-- Dağıtım Sonucu Bildirimi (Eğer dağıtılmış ve yayınlanmışsa görünür) -->
+      <div id="studentResultContainer" style="display: none;">
+        <div class="student-result-banner">
+          <div class="result-banner-text">
+            <h3>🎉 Proje Ödevi Atamanız Tamamlandı!</h3>
+            <p id="studentResultDetail">Sınıf öğretmeninizin yaptığı yerleştirme algoritması sonucunda aşağıdaki derse atandınız.</p>
+          </div>
+          <div class="result-course-box">
+            <div class="course-label">Atandığınız Ders</div>
+            <div class="course-name" id="studentResultCourse">Matematik</div>
+            <div style="font-size: 0.8rem; opacity: 0.9;" id="studentResultTeacher">Öğretmen: Mustafa Hoca</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tercih Formu Alanı -->
+      <div class="preference-wrapper">
+        
+        <div class="choices-card">
+          <div class="choices-card-header">
+            <h3>🎯 5 Ders Tercihinizi Belirleyin</h3>
+            <p id="studentChoiceDesc">1. tercihten başlayarak en çok istediğiniz dersleri sırayla seçiniz. Aynı dersi birden fazla kez seçemezsiniz.</p>
+          </div>
+
+          <!-- Kilitli Tercih Uyarısı (Yerleşme sonrası) -->
+          <div id="studentLockedNotice" class="slot-locked-notice" style="display: none;">
+            <span style="font-size: 1.4rem;">🔒</span>
+            <div>
+              <div style="font-size: 0.95rem; font-weight: 800; color: #78350f;">Proje Dersi Yerleştirmeniz Tamamlanmıştır!</div>
+              <p style="font-size: 0.82rem; margin-top: 0.2rem; opacity: 0.95; line-height: 1.4;">
+                Atandığınız ders yukarıdaki panoda gösterilmektedir. Tercih formunuz kapatılmıştır ve tekrar tercih alınmamaktadır. Bilgi veya değişiklik talepleriniz için sınıf rehber öğretmeninizle görüşünüz.
+              </p>
+            </div>
+          </div>
+
+          <form id="studentPreferencesForm" onsubmit="app.handleSavePreferences(event)">
+            <div class="preference-slots">
+              
+              <!-- 1. Tercih -->
+              <div class="preference-slot filled">
+                <div class="slot-number">1</div>
+                <div class="slot-content">
+                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">1. ÖNCELİKLİ TERCİHİNİZ</label>
+                  <select id="prefChoice1" class="form-control" required onchange="app.validateChoicesLive()">
+                    <option value="">Ders Seçiniz...</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 2. Tercih -->
+              <div class="preference-slot filled">
+                <div class="slot-number">2</div>
+                <div class="slot-content">
+                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">2. TERCİHİNİZ</label>
+                  <select id="prefChoice2" class="form-control" required onchange="app.validateChoicesLive()">
+                    <option value="">Ders Seçiniz...</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 3. Tercih -->
+              <div class="preference-slot filled">
+                <div class="slot-number">3</div>
+                <div class="slot-content">
+                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">3. TERCİHİNİZ</label>
+                  <select id="prefChoice3" class="form-control" required onchange="app.validateChoicesLive()">
+                    <option value="">Ders Seçiniz...</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 4. Tercih -->
+              <div class="preference-slot filled">
+                <div class="slot-number">4</div>
+                <div class="slot-content">
+                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">4. TERCİHİNİZ</label>
+                  <select id="prefChoice4" class="form-control" required onchange="app.validateChoicesLive()">
+                    <option value="">Ders Seçiniz...</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 5. Tercih -->
+              <div class="preference-slot filled">
+                <div class="slot-number">5</div>
+                <div class="slot-content">
+                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">5. TERCİHİNİZ</label>
+                  <select id="prefChoice5" class="form-control" required onchange="app.validateChoicesLive()">
+                    <option value="">Ders Seçiniz...</option>
+                  </select>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Canlı Hata / Bilgi Mesajı -->
+            <div id="choiceValidationError" style="display: none; margin-top: 1rem; color: var(--danger); font-size: 0.85rem; font-weight: 600;">
+              ⚠️ Lütfen 5 farklı ders seçtiğinizden emin olunuz.
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+              <button type="submit" id="btnSavePreferences" class="btn btn-primary btn-lg btn-block">
+                💾 Tercihlerimi Kaydet
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Sağ Taraf: Bilgilendirme Kartı -->
+        <div>
+          <div class="choices-card" style="margin-bottom: 1.5rem;">
+            <div class="choices-card-header">
+              <h3>ℹ️ Bilgilendirme & Kurallar</h3>
+            </div>
+            <ul style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; padding-left: 1.25rem;">
+              <li>Tercihleriniz sınıf öğretmeninizin ekranına anında aktarılır.</li>
+              <li>Yerleştirme esnasında <strong>1. tercihiniz</strong> öncelikli olarak değerlendirilir. Kontenjan dolarsa sırasıyla 2., 3., 4. ve 5. tercihe bakılır.</li>
+              <li>Tercih süresi sona erene kadar tercihlerinizi güncelleyebilirsiniz.</li>
+              <li>Sonuçlar açıklandığında bu ekrandan atanmış olduğunuz dersi ve öğretmeninizi görebilirsiniz.</li>
+            </ul>
+          </div>
+
+          <div class="choices-card">
+            <div class="choices-card-header">
+              <h3>📚 Sınıfınız İçin Açık Dersler</h3>
+            </div>
+            <div id="studentAvailableCoursesList" style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+              <!-- JS ile doldurulur -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ----------------------------------------------------------------------
+         GÖRÜNÜM 3: SINIF ÖĞRETMENİ PANELİ
+         ---------------------------------------------------------------------- -->
+    <section id="viewTeacher" class="view-section">
+      
+      <!-- Sınıf Öğretmeni Üst Bilgi Kartı -->
+      <div class="panel-header-card">
+        <div class="panel-user-info">
+          <div class="user-avatar" style="background: linear-gradient(135deg, #059669, #10b981);">👨‍🏫</div>
+          <div class="user-details">
+            <h2 id="teacherClassTitle">9-A Sınıfı Proje Yönetimi</h2>
+            <div class="user-meta-tags">
+              <span class="tag" id="teacherNameTag">Rehber Öğretmen: Ahmet Yılmaz</span>
+              <span class="tag tag-secondary" id="teacherStudentCountTag">16 Öğrenci</span>
+              <span class="tag tag-success" id="teacherSubmittedCountTag">15 Tercih Yapıldı</span>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-outline btn-sm" onclick="app.refreshTeacherView()">🔄 Yenile</button>
+          <button class="btn btn-secondary btn-sm" onclick="app.logout()">Çıkış</button>
+        </div>
+      </div>
+
+      <!-- Sekmeler Navigasyonu -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="app.switchTeacherTab('tabTeacherStudents', this)">
+          📋 1. Öğrenci Tercihleri
+        </button>
+        <button class="tab-btn" onclick="app.switchTeacherTab('tabTeacherConstraints', this)">
+          ⚙️ 2. Sınıf Kısıtları & Kontenjanlar
+        </button>
+        <button class="tab-btn" onclick="app.switchTeacherTab('tabTeacherDistribute', this)">
+          🚀 3. Dağıtım & Sonuçlar
+        </button>
+      </div>
+
+      <!-- SEKME 1: Sınıf Öğrencileri ve Tercihleri -->
+      <div id="tabTeacherStudents" class="tab-content active">
+        <div class="table-card">
+          <div class="table-header-bar">
+            <div>
+              <h3 style="font-size: 1.1rem; font-weight: 700;">Sınıf Mevcudu ve Tercih Durumu</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted);">Öğrencilerin yaptığı 5 tercihi sırasıyla görüntüleyebilirsiniz.</p>
+            </div>
+            <div>
+              <button class="btn btn-outline btn-sm" onclick="app.exportTeacherStudentsTableCSV()">
+                📥 Excel / CSV Olarak İndir
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Öğrenci Adı Soyadı</th>
+                  <th>1. Tercih</th>
+                  <th>2. Tercih</th>
+                  <th>3. Tercih</th>
+                  <th>4. Tercih</th>
+                  <th>5. Tercih</th>
+                  <th>Durum</th>
+                </tr>
+              </thead>
+              <tbody id="teacherStudentsTableBody">
+                <!-- JS ile doldurulur -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEKME 2: Sınıf Kısıtlamaları & Kontenjan Ayarları -->
+      <div id="tabTeacherConstraints" class="tab-content">
+        <div class="table-card" style="padding: 1.75rem;">
+          <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 800;">Sınıfınıza Özel Dağıtım Ayarları ve Kısıtlamalar</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              Sınıfınızdaki öğrencilerin dağıtımında her ders için maksimum kaç öğrenci alınacağını ve eşitlik kuralını belirleyin.
+            </p>
+          </div>
+
+          <form onsubmit="app.handleSaveTeacherConstraints(event)">
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+              
+              <div class="form-group">
+                <label for="constraintPriorityRule"><strong>Öncelik ve Sıralama Kriteri</strong></label>
+                <select id="constraintPriorityRule" class="form-control">
+                  <option value="random_fair">🎲 Rastgele Kura (Tamamen Adil Dağıtım)</option>
+                  <option value="first_submitted">⏱️ Önce Tercih Yapan Öğrenci Öncelikli</option>
+                </select>
+                <small style="color: var(--text-muted); font-size: 0.75rem;">Aynı derse birden fazla talep olduğunda kimin önce yerleşeceğini belirler.</small>
+              </div>
+
+              <div class="form-group">
+                <label><strong>Boş Kontenjanlara Otomatik Yerleştirme</strong></label>
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem;">
+                  <input type="checkbox" id="constraintAutoFill" style="width: 18px; height: 18px;" checked>
+                  <label for="constraintAutoFill" style="font-size: 0.88rem; cursor: pointer;">
+                    5 tercihine de yerleşemeyen öğrencileri boş kalan derslere dengeli dağıt
+                  </label>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Başka Sınıftan Kopyalama ve Hızlı İşlemler Paneli -->
+            <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: var(--radius-sm); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                <span style="font-weight: 700; color: #3730a3; font-size: 0.9rem;">📋 Başka Sınıftan Kopyala:</span>
+                <select id="teacherCopyClassSelect" class="form-control" style="width: auto; min-width: 220px; background: #fff; font-weight: 600;">
+                  <option value="">Kaynak Sınıfı Seçiniz...</option>
+                </select>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="app.handleCopyConstraintsFromClass()" style="font-weight: 700;">
+                  📥 Dersleri & Kontenjanları Aktar
+                </button>
+              </div>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.handleQuickSetAllCapacities(5)" title="Tüm derslerin kontenjanını 5 yapar">
+                  ⚡ Hepsini Aç (5)
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.handleQuickSetAllCapacities(0)" style="color: #991b1b; border-color: #fca5a5;" title="Tüm dersleri bu sınıfa kapatır (kontenjan 0)">
+                  ✕ Hepsini Kapat
+                </button>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <h4 style="font-size: 1rem; font-weight: 700; margin: 0;">
+                  Sınıfa Özgü Dersler ve Kontenjanlar
+                </h4>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Sınıfınız için ders kontenjanlarını belirleyin. Eksik ders varsa havuzdan ekleyebilirsiniz.</div>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" onclick="app.openTeacherAddCourseFromPoolModal()" style="font-weight: 700; color: #4338ca; border-color: #a5b4fc; background: #eef2ff;">
+                ➕ Havuzdan Ders Ekle
+              </button>
+            </div>
+
+            <div id="teacherCourseCapacitiesGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+              <!-- JS ile dersler listelenir -->
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              💾 Kısıtlama Ayarlarını Kaydet
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- SEKME 3: Dağıtımı Yap & Sonuçlar -->
+      <div id="tabTeacherDistribute" class="tab-content">
+        
+        <!-- Dağıtım Tetikleme Kartı -->
+        <div class="choices-card" style="margin-bottom: 2rem; background: linear-gradient(135deg, #f8fafc, #edf2f7);">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h3 style="font-size: 1.3rem; font-weight: 800; color: #1e1b4b;">🎯 Proje Dağıtım Algoritması</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem;">
+                Öğrencilerin 1. tercihlerinden başlanarak belirlenen sınıf kontenjanlarına göre yerleştirme yapılır.
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+              <button class="btn btn-primary btn-lg" onclick="app.runDistributionForCurrentClass()">
+                ⚡ Akıllı Dağıtımı Başlat
+              </button>
+              <button type="button" id="btnCancelDistribution" class="btn btn-outline btn-lg" style="display: none; color: #dc2626; border-color: #fca5a5; font-weight: 700; background: #fff5f5;" onclick="app.handleCancelDistribution()" title="Öğrenci tercihleri silinmez, yalnızca yapılan ders yerleştirmesi sıfırlanır">
+                ↺ Dağıtımı İptal Et (Sıfırla)
+              </button>
+            </div>
+          </div>
+
+          <!-- Canlı Algoritma Konsolu -->
+          <div id="distributionConsole" class="distribution-console" style="display: none;">
+            <!-- Canlı log satırları -->
+          </div>
+        </div>
+
+        <!-- Dağıtım İstatistikleri (Dağıtım sonrası gösterilir) -->
+        <div id="distributionStatsSection" style="display: none;">
+          
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon" style="background: #eef2ff; color: #4f46e5;">👥</div>
+              <div class="stat-info">
+                <h4 id="statTotalAssigned">0 / 0</h4>
+                <p>Yerleşen Öğrenci</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon" style="background: #ecfdf5; color: #059669;">🎯</div>
+              <div class="stat-info">
+                <h4 id="statFirstChoiceCount">0</h4>
+                <p>1. Tercihine Yerleşen</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon" style="background: #fef3c7; color: #d97706;">⚡</div>
+              <div class="stat-info">
+                <h4 id="statOtherChoicesCount">0</h4>
+                <p>2.-5. Tercihine Yerleşen</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon" style="background: #fef2f2; color: #ef4444;">⚠️</div>
+              <div class="stat-info">
+                <h4 id="statUnassignedCount">0</h4>
+                <p>Açıkta Kalan</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sonuç Tablosu -->
+          <div class="table-card">
+            <div class="table-header-bar">
+              <div>
+                <h3 style="font-size: 1.15rem; font-weight: 800;">Dağıtım Sonuç Listesi</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">
+                  Öğretmen olarak sonucu inceleyebilir, gerekirse dersi manuel değiştirebilir ve öğrencilere ilan edebilirsiniz.
+                </p>
+              </div>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; background: #f8fafc; padding: 0.4rem 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                  <input type="checkbox" id="togglePublishResults" onchange="app.handleTogglePublishResults(this.checked)">
+                  📢 Öğrenciler Sonucu Görebilsin
+                </label>
+                <button type="button" class="btn btn-primary btn-sm" onclick="app.printAllOfficialForms()" style="font-weight: 700; background: #4f46e5; border-color: #4338ca;" title="Tüm sınıfın resmi MEB Proje Seçim Dilekçelerini ayrı sayfalar halinde yazdırır">
+                  📄 Resmi Dilekçeleri Yazdır (Toplu)
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.printClassResultsSheet()" style="font-weight: 700;" title="Sınıfın resmi Proje Dağıtım Sonuç Çizelgesi tablosunu A4 formatında yazdırır">
+                  🖨️ Toplu Liste Çıktısı (Çizelge)
+                </button>
+                <button class="btn btn-success btn-sm" onclick="app.exportResultsToExcel()">
+                  📥 Excel Listesi İndir
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;" onclick="app.handleCancelDistribution()" title="Öğrenci tercihleri silinmez, yalnızca yapılan ders yerleştirmesi sıfırlanır">
+                  ↺ Dağıtımı İptal Et
+                </button>
+                
+              </div>
+            <div id="unassignedAlertBanner" style="display: none; padding: 1rem 1.25rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); margin: 1rem 1.5rem; color: #991b1b; font-size: 0.9rem; font-weight: 600;">
+              <!-- JS ile doldurulur -->
+            </div>
+
+            <div class="table-responsive">
+              <table class="custom-table" id="resultsTable">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Öğrenci Adı Soyadı</th>
+                    <th>Yerleştiği Proje Dersi</th>
+                    <th>Yerleşme Nedeni</th>
+                    <th>Öğretmen</th>
+                    <th>Manuel Düzelt</th>
+                  </tr>
+                </thead>
+                <tbody id="resultsTableBody">
+                  <!-- JS ile doldurulur -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ----------------------------------------------------------------------
+         GÖRÜNÜM 4: İDARE / YÖNETİCİ PANELİ
+         ---------------------------------------------------------------------- -->
+    <section id="viewAdmin" class="view-section">
+      
+      <!-- İdare Üst Bilgi Kartı -->
+      <div class="panel-header-card">
+        <div class="panel-user-info">
+          <div class="user-avatar" style="background: linear-gradient(135deg, #7c3aed, #ec4899);">🛡️</div>
+          <div class="user-details">
+            <h2>Okul Yönetimi & Kontrol Paneli</h2>
+            <div class="user-meta-tags">
+              <span class="tag" id="adminActiveSchoolTag">Okul: Atatürk Fen Lisesi</span>
+              <span class="tag tag-secondary" id="adminTotalStudentTag">Toplam 23 Öğrenci</span>
+              <span class="tag tag-success" id="adminCompletedClassesTag">Dağıtılan Sınıflar: 0 / 4</span>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-outline btn-sm" onclick="app.refreshAdminView()">🔄 Yenile</button>
+          <button class="btn btn-secondary btn-sm" onclick="app.logout()">Çıkış</button>
+        </div>
+      </div>
+
+      <!-- Sekmeler Navigasyonu -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="app.switchAdminTab('tabAdminClasses', this)">
+          🏫 Sınıflar & Rehber Öğretmenler
+        </button>
+        <button class="tab-btn" onclick="app.switchAdminTab('tabAdminClassCourses', this)">
+          🎯 Sınıf-Ders & Kontenjan Eşleştirme
+        </button>
+        <button class="tab-btn" onclick="app.switchAdminTab('tabAdminCourses', this)">
+          📚 Okul Ders Havuzu
+        </button>
+        <button class="tab-btn" onclick="app.switchAdminTab('tabAdminStudents', this)">
+          👥 Öğrenci Listesi & Toplu Yükleme
+        </button>
+        <button class="tab-btn" onclick="app.switchAdminTab('tabAdminSettings', this)">
+          ⚙️ Sistem, Firebase & Yedek
+        </button>
+      </div>
+
+      <!-- SEKME 1: Sınıf Yönetimi -->
+      <div id="tabAdminClasses" class="tab-content active">
+        <div class="table-card">
+          <div class="table-header-bar">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800;">Sınıf Listesi & Dağıtım Durumları</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted);">Sınıfları, sınıf rehber öğretmenlerini ve giriş şifrelerini yönetin.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="app.openAddClassModal()">
+              ➕ Yeni Sınıf Ekle
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Sınıf</th>
+                  <th>Kademesi</th>
+                  <th>Sınıf Rehber Öğretmeni</th>
+                  <th>Giriş Şifresi</th>
+                  <th>Mevcut</th>
+                  <th>Tercih Yapan</th>
+                  <th>Dağıtım Durumu</th>
+                  <th>İşlemler</th>
+                </tr>
+              </thead>
+              <tbody id="adminClassesTableBody">
+                <!-- JS ile doldurulur -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+            <!-- SEKME: Sınıf-Ders Eşleştirme (Admin) -->
+      <div id="tabAdminClassCourses" class="tab-content">
+        <div class="table-card">
+          <div class="table-header-bar">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800;">🎯 Sınıf - Ders Eşleştirme Paneli</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted);">
+                Kontenjana girmeden, hangi sınıfların hangi dersleri alacağını onay kutularıyla (checkbox) seçin. Kontenjanları sınıf öğretmenleri belirleyecektir.
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="btn btn-primary btn-sm" onclick="app.openBulkClassCourseModal()" style="font-weight: 700; background: #4f46e5; border-color: #4338ca;">
+                📄 CSV ile Toplu Eşleştir
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="app.exportClassCoursesToCSV()" style="font-weight: 600;">
+                📥 Eşleştirmeleri CSV İndir
+              </button>
+            </div>
+          </div>
+
+          <!-- 1. Adım: Hedef Sınıfları Seç (Çoklu Sınıf Seçimi) -->
+          <div style="background: #f8fafc; border-bottom: 1px solid var(--border); padding: 1.25rem 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div style="font-weight: 800; color: #1e1b4b; font-size: 0.95rem; display: flex; align-items: center; gap: 0.6rem;">
+                <span>1️⃣ İşlem Yapılacak Hedef Sınıfları Seçin:</span>
+                <span id="adminSelectedClassCountBadge" class="tag tag-primary" style="font-size: 0.75rem; font-weight: 700;">0 Sınıf Seçili</span>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.adminSelectAllClasses(true)" style="padding: 0.25rem 0.65rem; font-size: 0.78rem; font-weight: 600;">
+                  ✓ Tüm Sınıfları Seç
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.adminSelectAllClasses(false)" style="padding: 0.25rem 0.65rem; font-size: 0.78rem; font-weight: 600;">
+                  ✕ Seçimi Temizle
+                </button>
+              </div>
+            </div>
+
+            <!-- Checkbox listesi -->
+            <div id="adminClassCheckboxContainer" style="display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0.25rem 0;">
+              <!-- JS ile dinamik sınıf checkbox'ları doldurulur -->
+            </div>
+
+            <!-- Şablon Yükleme (Sadece eşleşmesi olan sınıflar listelenir) -->
+            <div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                <span style="font-weight: 700; color: #3730a3; font-size: 0.85rem;">📋 Eşleşmesi Olan Sınıftan Kopyala:</span>
+                <select id="adminCopyFromClassSelect" class="form-control" style="width: auto; min-width: 220px; background: #fff; font-size: 0.85rem;" onchange="app.handleAdminLoadClassTemplate(this.value)">
+                  <option value="">Eşleşmesi Olan Sınıfı Seçiniz...</option>
+                </select>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.adminSelectAllCourses(true)">✓ Tüm Dersleri Seç</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.adminSelectAllCourses(false)" style="color: #991b1b; border-color: #fca5a5;">✕ Tümünü Kaldır</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Adım: Ders Havuzu Onay Kutuları (Checkbox) -->
+          <form onsubmit="app.handleSaveAdminClassCourses(event)" style="padding: 1.5rem;">
+            <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <strong style="color: #1e1b4b; font-size: 0.95rem;">2️⃣ Seçilen Sınıflara Atanacak Dersleri İşaretleyin:</strong>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">İşaretlenen dersler bu sınıfların ders programına atanacaktır. Kontenjanları öğretmenler belirleyecektir.</div>
+              </div>
+            </div>
+
+            <div id="adminClassCoursesGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.85rem; margin-bottom: 1.5rem;">
+              <!-- JS ile checkbox ders kartları listelenir -->
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+              <div style="font-size: 0.85rem; color: var(--text-muted);">
+                💡 Kaydet'e bastığınızda yukarıda işaretli olan <strong>tüm sınıflara</strong> bu dersler aynı anda atanır.
+              </div>
+              <button type="submit" class="btn btn-primary btn-lg" style="font-weight: 700; background: #4f46e5; border-color: #4338ca;">
+                💾 Seçili Sınıflara Dersleri Ata ve Kaydet
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+<!-- SEKME 2: Ders Yönetimi -->
+      <div id="tabAdminCourses" class="tab-content">
+        <div class="table-card">
+          <div class="table-header-bar">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800;">Proje Dersleri Listesi</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted);">Öğrencilerin proje seçebileceği dersler, zümre öğretmenleri ve kademe izinleri.</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-outline btn-sm" onclick="app.openBulkCourseModal()">
+                📄 Toplu Ders Ekle (CSV)
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="app.openAddCourseModal()">
+                ➕ Yeni Ders Ekle
+              </button>
+              <button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: #fca5a5;" onclick="app.handleClearAllCourses()">
+                🗑️ Tüm Dersleri Sil
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Kod</th>
+                  <th>Ders Adı</th>
+                  <th>Ders Öğretmeni</th>
+                  <th>Proje Durumu</th>
+                  <th>İşlemler</th>
+                </tr>
+              </thead>
+              <tbody id="adminCoursesTableBody">
+                <!-- JS ile doldurulur -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEKME 3: Öğrenci Yönetimi -->
+      <div id="tabAdminStudents" class="tab-content">
+        <div class="table-card">
+          <div class="table-header-bar">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800;">Öğrenci Yönetimi</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted);">Tüm okuldaki öğrencileri listeleyin veya Excel/CSV formatında toplu aktarın.</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-outline btn-sm" onclick="app.openBulkImportModal()">
+                📄 Toplu Öğrenci Yükle (CSV)
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="app.openAddStudentModal()">
+                ➕ Tek Öğrenci Ekle
+              </button>
+            </div>
+          </div>
+          
+          <div style="padding: 1rem 1.5rem; background: #f8fafc; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+              <input type="text" id="adminStudentSearchInput" class="form-control" placeholder="Numara veya İsimle Ara..." oninput="app.filterAdminStudentsTable()">
+            </div>
+            <div>
+              <select id="adminStudentClassFilter" class="form-control" onchange="app.filterAdminStudentsTable()">
+                <option value="">Tüm Sınıflar</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Ad Soyad</th>
+                  <th>Sınıfı</th>
+                  <th>Şifresi</th>
+                  <th>Tercih Durumu</th>
+                  <th>İşlemler</th>
+                </tr>
+              </thead>
+              <tbody id="adminStudentsTableBody">
+                <!-- JS ile doldurulur -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEKME 4: Sistem & Firebase Ayarları -->
+      <div id="tabAdminSettings" class="tab-content">
+        <div class="preference-wrapper">
+          
+          <!-- Genel Ayarlar -->
+          <div class="choices-card">
+            <div class="choices-card-header">
+              <h3>🏫 Okul ve Tercih Dönemi Ayarları</h3>
+            </div>
+            <form onsubmit="app.handleSaveGeneralSettings(event)">
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="settingSchoolName">Okul Adı</label>
+                <input type="text" id="settingSchoolName" class="form-control" required>
+              </div>
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="settingTermName">Dönem / Yıl Bilgisi</label>
+                <input type="text" id="settingTermName" class="form-control" required>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label for="settingStartDate">Başlangıç Tarihi</label>
+                  <input type="date" id="settingStartDate" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label for="settingEndDate">Bitiş Tarihi</label>
+                  <input type="date" id="settingEndDate" class="form-control">
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="settingAnnouncement">Öğrenci Duyuru Mesajı</label>
+                <textarea id="settingAnnouncement" class="form-control" rows="3"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                💾 Genel Ayarları Kaydet
+              </button>
+            </form>
+          </div>
+
+          <!-- Yedekleme & Hızlı İşlemler -->
+          <div>
+            <div class="choices-card" style="margin-bottom: 1.5rem;">
+              <div class="choices-card-header">
+                <h3>💾 Veri Yedekleme ve Geri Yükleme</h3>
+                <p>Tüm okul verilerini tek tıkla JSON dosyası olarak indirip saklayabilirsiniz.</p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <button class="btn btn-outline btn-block" onclick="app.downloadBackupJSON()">
+                  📥 Tüm Verileri Yedekle (JSON İndir)
+                </button>
+                <button class="btn btn-outline btn-block" onclick="document.getElementById('importBackupInput').click()">
+                  📤 Yedekten Geri Yükle (JSON Seç)
+                </button>
+                <input type="file" id="importBackupInput" style="display: none;" accept=".json" onchange="app.handleRestoreBackup(event)">
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================================================
+       MODAL PENCERELER
+       ======================================================================== -->
+
+  <!-- Firebase Yapılandırma Modalı -->
+  <div id="modalFirebase" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🔥 Google Firebase Firestore Yapılandırması</h3>
+        <button class="modal-close" onclick="app.closeModal('modalFirebase')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          GitHub Pages üzerinde ücretsiz ve sunucusuz bir veritabanı kullanmak için <a href="https://console.firebase.google.com" target="_blank" style="color: var(--primary); font-weight: 700;">Google Firebase Console</a>'dan bir proje açıp Firestore veritabanını aktif edin ve web projesi yapılandırma kodunu buraya yapıştırın.
+        </p>
+        <form onsubmit="app.handleSaveFirebaseConfig(event)">
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="fbApiKey">apiKey</label>
+            <input type="text" id="fbApiKey" class="form-control" placeholder="AIzaSy..." required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="fbProjectId">projectId</label>
+            <input type="text" id="fbProjectId" class="form-control" placeholder="proje-odevi-123" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="fbAuthDomain">authDomain (Opsiyonel)</label>
+            <input type="text" id="fbAuthDomain" class="form-control" placeholder="proje-odevi-123.firebaseapp.com">
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="fbAppId">appId (Opsiyonel)</label>
+            <input type="text" id="fbAppId" class="form-control" placeholder="1:123456789:web:abcdef">
+          </div>
+          
+          <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary btn-block">
+              🔥 Firebase'e Bağlan ve Kaydet
+            </button>
+            <button type="button" class="btn btn-outline" onclick="app.handleClearFirebase()">
+              Temizle (Yerel Mod)
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sınıf Ekle Modalı -->
+  <div id="modalAddClass" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🏫 Yeni Sınıf Ekle</h3>
+        <button class="modal-close" onclick="app.closeModal('modalAddClass')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="app.handleSaveNewClass(event)">
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="newClassName">Sınıf Adı</label>
+            <input type="text" id="newClassName" class="form-control" placeholder="Örn: 9-C" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="newClassGrade">Kademe (Düzey)</label>
+            <select id="newClassGrade" class="form-control" required>
+              <option value="9">9. Sınıf</option>
+              <option value="10">10. Sınıf</option>
+              <option value="11">11. Sınıf</option>
+              <option value="12">12. Sınıf</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="newClassTeacher">Sınıf Rehber Öğretmeni</label>
+            <input type="text" id="newClassTeacher" class="form-control" placeholder="Örn: Merve Yıldız" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="newClassTeacherPass">Öğretmen Giriş Şifresi</label>
+            <input type="text" id="newClassTeacherPass" class="form-control" value="1234" required>
+          </div>
+          <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary btn-block">Sınıfı Kaydet</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ders Ekle Modalı -->
+  <div id="modalAddCourse" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📚 Yeni Proje Dersi Ekle</h3>
+        <button class="modal-close" onclick="app.closeModal('modalAddCourse')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="app.handleSaveNewCourse(event)">
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="newCourseName">Ders Adı</label>
+            <input type="text" id="newCourseName" class="form-control" placeholder="Örn: Görsel Sanatlar" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="newCourseCode">Ders Kodu</label>
+            <input type="text" id="newCourseCode" class="form-control" placeholder="Örn: GRS" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="newCourseTeacher">Ders Öğretmeni (Opsiyonel)</label>
+            <input type="text" id="newCourseTeacher" class="form-control" placeholder="İsteğe bağlı, boş bırakılabilir">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" id="newCourseActive" checked style="width: 18px; height: 18px;">
+              <span>Bu derste proje ödevi seçimine izin ver (Aktif)</span>
+            </label>
+          </div>
+          <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary btn-block">Dersi Kaydet</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ders Düzenleme Modalı -->
+  <div id="modalEditCourse" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>✏️ Proje Dersini Düzenle</h3>
+        <button class="modal-close" onclick="app.closeModal('modalEditCourse')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="app.handleUpdateCourse(event)">
+          <input type="hidden" id="editCourseId">
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="editCourseName">Ders Adı</label>
+            <input type="text" id="editCourseName" class="form-control" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="editCourseCode">Ders Kodu</label>
+            <input type="text" id="editCourseCode" class="form-control" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="editCourseTeacher">Ders Öğretmeni (Opsiyonel)</label>
+            <input type="text" id="editCourseTeacher" class="form-control" placeholder="İsteğe bağlı, boş bırakılabilir">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" id="editCourseActive" style="width: 18px; height: 18px;">
+              <span>Bu derste proje ödevi seçimine izin ver (Aktif)</span>
+            </label>
+          </div>
+          <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary btn-block">Değişiklikleri Kaydet</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toplu Ders Yükleme Modalı -->
+  <div id="modalBulkCourseImport" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📄 Toplu Ders Yükleme (CSV / Metin)</h3>
+        <button class="modal-close" onclick="app.closeModal('modalBulkCourseImport')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Ders listenizi her satıra bir ders gelecek şekilde yapıştırın.<br>
+          Format: <code>Kod,Ders Adı,Kontenjan,Kademeler,Öğretmen(Opsiyonel)</code><br>
+          Örnek:<br>
+          <code>MAT,Matematik,5,9-10-11-12</code><br>
+          <code>FIZ,Fizik,4,9-10-11-12</code><br>
+          <code>FEL,Felsefe,3,10-11</code><br>
+          <code>BIL,Bilişim ve Kodlama,4,9-10,Burak Hoca</code>
+        </p>
+        <textarea id="bulkCourseImportTextarea" class="form-control" rows="8" placeholder="MAT,Matematik,5,9-10-11-12&#10;FIZ,Fizik,4,9-10-11-12&#10;KIM,Kimya,4,9-10-11-12&#10;BIY,Biyoloji,4,9-10-11-12"></textarea>
+        <div style="margin-top: 1.25rem;">
+          <button type="button" class="btn btn-primary btn-block" onclick="app.processBulkCourseImport()">
+            Toplu Dersleri İçe Aktar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Öğrenci Ekle Modalı -->
+  <div id="modalAddStudent" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🎓 Yeni Öğrenci Ekle</h3>
+        <button class="modal-close" onclick="app.closeModal('modalAddStudent')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="app.handleSaveNewStudent(event)">
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="newStudentNumber">Okul Numarası</label>
+            <input type="text" id="newStudentNumber" class="form-control" placeholder="Örn: 155" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="newStudentName">Ad Soyad</label>
+            <input type="text" id="newStudentName" class="form-control" placeholder="Örn: Kerem Kaya" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="newStudentClass">Sınıfı</label>
+            <select id="newStudentClass" class="form-control" required>
+              <!-- JS ile sınıflar doldurulur -->
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label for="newStudentPass">Giriş Şifresi</label>
+            <input type="text" id="newStudentPass" class="form-control" placeholder="Varsayılan: numarası" required>
+          </div>
+          <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary btn-block">Öğrenciyi Kaydet</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toplu CSV Öğrenci Yükleme Modalı -->
+  <div id="modalBulkImport" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📄 CSV Formatında Toplu Öğrenci Yükleme</h3>
+        <button class="modal-close" onclick="app.closeModal('modalBulkImport')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Öğrenci listesini her satıra bir öğrenci gelecek şekilde yapıştırın.<br>
+          Format: <code>Numara,Ad Soyad,Sınıf,Şifre</code><br>
+          Örnek: <code>120,Hasan Demir,9-A,120</code>
+        </p>
+        <textarea id="bulkImportTextarea" class="form-control" rows="8" placeholder="121,Ayşe Yılmaz,9-A,121&#10;122,Mehmet Öz,9-A,122"></textarea>
+        <div style="margin-top: 1.25rem;">
+          <button class="btn btn-primary btn-block" onclick="app.processBulkImport()">
+            Toplu Öğrencileri İçe Aktar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Bildirim Konteyneri -->
+  <div id="officialPrintContainer" class="official-print-container"></div>
+  <div id="toast-container"></div>
+
+  <!-- Uygulama Scriptleri (Modüler, derleme gerektirmez) -->
+  <script src="js/demo-data.js"></script>
+  <script src="js/algorithm.js"></script>
+  <script src="js/firebase-service.js"></script>
+  <script src="js/app.js"></script>
+
+
+  <!-- Modal: CSV ile Toplu Sınıf-Ders Eşleştirme -->
+  <div id="modalBulkClassCourseImport" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3>📄 CSV ile Toplu Sınıf-Ders Eşleştirme</h3>
+        <button class="modal-close" onclick="app.closeModal('modalBulkClassCourseImport')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          Excel veya metin dosyanızdan kopyalayıp buraya yapıştırın. Sistem sınıfları ve dersleri otomatik olarak eşleştirecektir.<br>
+          Format: <code>Sınıf,Ders Kodu,Kontenjan</code> veya <code>Sınıf,Ders Adı,Kontenjan</code>
+        </p>
+
+        <div style="background: #f1f5f9; padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.8rem; margin-bottom: 0.75rem; border: 1px solid #e2e8f0;">
+          <strong>Örnek Satırlar:</strong><br>
+          <code>10-A, NES-10, 8</code><br>
+          <code>10-A, MAT, 5</code><br>
+          <code>10-BB, NES-10, 10</code><br>
+          <code>10-BB, FIZ, 4</code>
+        </div>
+
+        <textarea id="bulkClassCourseTextarea" class="form-control" rows="8" placeholder="10-A, NES-10, 8&#10;10-A, MAT, 5&#10;10-BB, NES-10, 10&#10;10-BB, FIZ, 4"></textarea>
+
+        <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="app.fillBulkClassCourseSample()">
+            📋 Örnek Şablon Doldur
+          </button>
+          <button type="button" class="btn btn-primary" onclick="app.processBulkClassCourseImport()" style="font-weight: 700;">
+            💾 Eşleştirmeleri İçe Aktar ve Kaydet
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modal: Öğretmen Havuzdan Ders Ekleme -->
+  <div id="modalTeacherAddCourseFromPool" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>➕ Havuzdan Sınıfa Ders Ekle</h3>
+        <button class="modal-close" onclick="app.closeModal('modalTeacherAddCourseFromPool')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Okul Ders Havuzunda bulunan ve henüz sınıfınıza atanmamış bir dersi seçerek sınıfınıza ekleyebilirsiniz.
+        </p>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="teacherPoolCourseSelect" style="font-weight: 700;">Eklenecek Ders</label>
+          <select id="teacherPoolCourseSelect" class="form-control" style="font-weight: 600;">
+            <!-- JS ile dersler doldurulur -->
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label for="teacherPoolCourseQuota" style="font-weight: 700;">Bu Ders İçin Sınıf Kontenjanı</label>
+          <input type="number" id="teacherPoolCourseQuota" class="form-control" value="5" min="1" max="50" style="font-weight: 800;">
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" onclick="app.handleAddCourseFromPoolToCurrentClass()" style="font-weight: 700;">
+          ➕ Dersi Sınıfıma Ekle ve Kaydet
+        </button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Öğrenci Portalı - Okul360 Proje Ödevi Tercih Sistemi</title>
+  <meta name="description" content="Öğrenciler için 5 tercihli proje ödevi seçim ve yerleştirme portalı.">
+  
+  <!-- CSS Stilleri -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    /* Öğrenci Portalı Özel Stilleri */
+    .student-login-wrap {
+      min-height: calc(100vh - 160px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1rem;
+    }
+
+    .student-login-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2.25rem 2rem;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .student-login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #4f46e5, #06b6d4, #10b981);
+    }
+
+    .student-logo-box {
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 1.25rem;
+      border-radius: 20px;
+      background: #ffffff;
+      padding: 6px;
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.12);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .student-logo-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .student-badge-role {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: var(--radius-full);
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+
+    .student-login-card h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+    }
+
+    .student-login-card p.subtitle {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 1.75rem;
+    }
+
+    .student-placed-hero {
+      background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 50%, #e0f2fe 100%);
+      border: 2px solid #a7f3d0;
+      border-radius: var(--radius-lg);
+      padding: 2.25rem 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .student-placed-hero::after {
+      content: '🎓';
+      position: absolute;
+      right: 1.5rem;
+      bottom: 0.5rem;
+      font-size: 6rem;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+
+    .placed-header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #10b981;
+      color: #ffffff;
+      padding: 0.4rem 1rem;
+      border-radius: var(--radius-full);
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .placed-course-box {
+      background: #ffffff;
+      border: 1px solid #bbf7d0;
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      margin: 1.25rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    }
+
+    .placed-course-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #065f46;
+    }
+
+    .placed-teacher-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #047857;
+    }
+
+    .placed-reason {
+      font-size: 0.88rem;
+      color: #475569;
+      margin-top: 0.25rem;
+    }
+
+    .student-lock-notice-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      color: #92400e;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      line-height: 1.5;
+    }
+
+    .portal-switch-link {
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .portal-switch-link a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .portal-switch-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+
+  <!-- Firebase v8 Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+</head>
+<body>
+
+  <!-- ========================================================================
+       ÜST GEZİNME ÇUBUĞU (NAVBAR)
+       ======================================================================== -->
+  <header class="navbar">
+    <a href="ogrenci.html" class="nav-brand" style="text-decoration: none;">
+      <div class="brand-icon">
+        <img src="okul-360-logo.webp" alt="Okul360" class="brand-img-logo">
+      </div>
+      <div class="brand-text">
+        <h1 id="navSchoolTitle">Okul360</h1>
+        <p>Öğrenci Proje Ödevi Tercih Portalı</p>
+      </div>
+    </a>
+
+    <div class="nav-actions">
+      <!-- Sadece oturum açıkken çıkış butonu -->
+      <button id="navLogoutBtn" class="btn btn-secondary btn-sm" style="display: none;" onclick="studentApp.logout()">
+        🚪 Güvenli Çıkış
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       ANA UYGULAMA ALANI
+       ======================================================================== -->
+  <main class="app-container">
+
+    <!-- ----------------------------------------------------------------------
+         BÖLÜM 1: ÖĞRENCİ GİRİŞ EKRANI (GİRİŞ YAPILMAMIŞSA)
+         ---------------------------------------------------------------------- -->
+    <div id="studentLoginSection" class="student-login-wrap">
+      <div class="student-login-card">
+        
+        <div class="student-logo-box">
+          <img src="okul-360-logo.webp" alt="Okul360 Logo">
+        </div>
+
+        <div class="student-badge-role">🎓 Öğrenci Giriş Portalı</div>
+        <h2>Proje Ödevi Tercih Sistemi</h2>
+        <p class="subtitle">Okul numaranız ve şifreniz ile sisteme giriş yaparak 5 tercihinizi yapabilir veya yerleştirme sonucunuzu öğrenebilirsiniz.</p>
+
+        <form class="auth-form" onsubmit="studentApp.handleLogin(event)">
+          <div class="form-group" style="text-align: left;">
+            <label for="studentNumberInput" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main); margin-bottom: 0.35rem; display: block;">Okul Numarası</label>
+            <input type="text" id="studentNumberInput" class="form-control" placeholder="Örn: 101" required autocomplete="username">
+          </div>
+
+          <div class="form-group" style="text-align: left;">
+            <label for="studentPassInput" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main); margin-bottom: 0.35rem; display: block;">Öğrenci Şifresi</label>
+            <input type="password" id="studentPassInput" class="form-control" placeholder="•••••" required autocomplete="current-password">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 0.75rem; font-weight: 700;">
+            Giriş Yap
+          </button>
+        </form>
+
+
+
+      </div>
+    </div>
+
+    <!-- ----------------------------------------------------------------------
+         BÖLÜM 2: ÖĞRENCİ PANELİ (GİRİŞ YAPILDIĞINDA)
+         ---------------------------------------------------------------------- -->
+    <div id="studentDashboardSection" style="display: none;">
+      
+      <!-- Profil Başlığı -->
+      <div class="panel-header-card">
+        <div class="panel-user-info">
+          <div class="user-avatar" id="studentAvatar">Ö</div>
+          <div class="user-details">
+            <h2 id="studentFullName">Öğrenci Adı Soyadı</h2>
+            <div class="user-meta-tags">
+              <span class="tag" id="studentTagClass">Sınıf: 9-A</span>
+              <span class="tag tag-secondary" id="studentTagNumber">No: 101</span>
+              <span class="tag tag-success" id="studentTagStatus">Tercih Yapıldı</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <button class="btn btn-outline btn-sm" onclick="studentApp.logout()">🚪 Çıkış Yap</button>
+        </div>
+      </div>
+
+      <!-- DURUM 1: YERLEŞTİRME TAMAMLANDIĞINDA GÖRÜNEN KART (TERCİH FORMU KAPATILIR) -->
+      <div id="studentPlacedCard" class="student-placed-hero" style="display: none;">
+        <div class="placed-header-badge">
+          <span>🏆</span>
+          <span>Proje Ödevi Yerleştirmeniz Kesinleşti!</span>
+        </div>
+
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: #064e3b; margin-bottom: 0.35rem;">
+          Tebrikler! Proje Dersi Atamanız Yapılmıştır
+        </h3>
+        <p style="font-size: 0.9rem; color: #065f46; max-width: 680px;">
+          Sınıf rehber öğretmeninizin akıllı dağıtım algoritması ve sınıf kontenjanları doğrultusunda aşağıdaki proje dersine yerleştirildiniz:
+        </p>
+
+        <div class="placed-course-box">
+          <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #059669;">
+            Kesinleşen Proje Dersi
+          </div>
+          <div class="placed-course-title">
+            <span id="placedCourseName">Matematik</span>
+            <span id="placedCourseCode" style="font-size: 1rem; color: #64748b; font-weight: 600; margin-left: 0.5rem;">[MAT-9]</span>
+          </div>
+          <div class="placed-teacher-name" id="placedTeacherName">👨‍🏫 Ders Öğretmeni: Mustafa Hoca</div>
+          <div class="placed-reason" id="placedReasonDetail">1. tercihiniz olan bu derse başarıyla yerleştirildiniz.</div>
+        </div>
+
+        <div class="student-lock-notice-box">
+          <span style="font-size: 1.5rem;">🔒</span>
+          <div>
+            <strong>Tercih Ekranı Kilitlenmiştir:</strong><br>
+            Ders yerleştirmeniz tamamlandığı için tercih seçim ekranınız kapatılmıştır ve tekrar tercih alınmamaktadır.
+            Ders değişikliği veya iptal talepleriniz için lütfen <strong>Sınıf Rehber Öğretmeniniz</strong> ile iletişime geçiniz.
+          </div>
+        </div>
+      </div>
+
+      <!-- DURUM 2: HENÜZ YERLEŞTİRİLMEDİĞİNDE GÖRÜNEN 5 TERCİH FORMU -->
+      <div id="studentPrefWrapper" class="preference-wrapper">
+        
+        <div class="choices-card">
+          <div class="choices-card-header">
+            <h3>📝 5 Ders Tercihinizi Belirleyin</h3>
+            <p>1. tercihten başlayarak en çok istediğiniz proje derslerini sırayla seçiniz. Aynı dersi birden fazla kez seçemezsiniz.</p>
+          </div>
+
+          <form id="studentPreferencesForm" onsubmit="studentApp.handleSavePreferences(event)">
+            <div class="preference-slots">
+              
+              <!-- 1. Tercih -->
+              <div class="preference-slot">
+                <div class="slot-number">1</div>
+                <div class="slot-content">
+                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">1. ÖNCELİKLİ TERCİHİNİZ (EN ÇOK İSTEDİĞİNİZ)</label>
+                  <select id="prefChoice1" class="form-control" required onchange="studentApp.validateChoicesLive()">
+                    <option value="">Ders Seçiniz...</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 2. Tercih -->
+              <div class="preference-slot">
+                <div class="slot-number">2</div>
+                <div class="slot-content">
+                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">2. TERCİHİNİZ</label>
+                  <select id="prefChoice2" class="form-control" required onchange="studentApp.validateChoicesLive()">
+                    <option value="">Ders Seçiniz...</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 3. Tercih -->
+              <div class="preference-slot">
+                <div class="slot-number">3</div>
+                <div class="slot-content">
+                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">3. TERCİHİNİZ</label>
+                  <select id="prefChoice3" class="form-control" required onchange="studentApp.validateChoicesLive()">
+                    <option value="">Ders Seçiniz...</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 4. Tercih -->
+              <div class="preference-slot">
+                <div class="slot-number">4</div>
+                <div class="slot-content">
+                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">4. TERCİHİNİZ</label>
+                  <select id="prefChoice4" class="form-control" required onchange="studentApp.validateChoicesLive()">
+                    <option value="">Ders Seçiniz...</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 5. Tercih -->
+              <div class="preference-slot">
+                <div class="slot-number">5</div>
+                <div class="slot-content">
+                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">5. TERCİHİNİZ</label>
+                  <select id="prefChoice5" class="form-control" required onchange="studentApp.validateChoicesLive()">
+                    <option value="">Ders Seçiniz...</option>
+                  </select>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Doğrulama Hatası -->
+            <div id="choiceValidationError" class="alert alert-danger" style="display: none; margin: 1.25rem 0; font-size: 0.9rem;">
+              <!-- JS ile doldurulur -->
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+              <button type="submit" id="btnSavePreferences" class="btn btn-primary btn-lg" style="font-weight: 700;">
+                💾 Tercihlerimi Kaydet
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Sağ Taraf: Sınıfın Seçebileceği Açık Proje Dersleri -->
+        <div class="choices-card">
+          <div class="choices-card-header">
+            <h3>📚 Seçebileceğiniz Proje Dersleri</h3>
+            <p>Sınıf kademenize açık olan dersler ve ders kontenjanları aşağıdadır.</p>
+          </div>
+
+          <div id="studentAvailableCoursesList" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 480px; overflow-y: auto; padding-right: 0.25rem;">
+            <!-- JS ile doldurulur -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Bildirim Toast Alanı -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Servis ve Uygulama Betikleri -->
+  <script src="js/demo-data.js"></script>
+  <script src="js/firebase-service.js"></script>
+  <script src="js/algorithm.js"></script>
+  <script src="js/student-app.js"></script>
+  <div id="officialPrintContainer" class="official-print-container"></div>
+</body>
+</html>
