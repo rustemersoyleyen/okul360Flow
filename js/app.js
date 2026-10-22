@@ -1423,25 +1423,24 @@ class AppController {
     let addedCount = 0;
 
     lines.forEach((line, index) => {
-      const parts = line.split(',').map(p => p.trim());
+      const parts = line.split(',').map(p => p.trim()).filter(p => p.length > 0);
       if (parts.length >= 2) {
         const code = parts[0].toUpperCase();
         const name = parts[1];
-        const defaultCapacity = parts[2] ? (parseInt(parts[2], 10) || 4) : 4;
         
-        let targetGrades = ["9", "10", "11", "12"];
-        if (parts[3]) {
-          targetGrades = parts[3].split('-').map(g => g.trim());
+        // Eğer kullanıcı eski 5 parçalı format yapıştırdıysa parts[4] öğretmen, yeni 3 parçalıysa parts[2] öğretmendir
+        let teacher = '';
+        if (parts.length >= 5) {
+          teacher = parts[4];
+        } else if (parts.length === 3 && isNaN(parseInt(parts[2], 10))) {
+          teacher = parts[2];
         }
 
-        const teacher = parts[4] || ''; // Opsiyonel öğretmen
-
         // Mevcut ders varsa güncelle, yoksa yeni ekle
-        let existing = this.courses.find(c => c.code === code);
+        let existing = this.courses.find(c => c.code === code || c.name.toLowerCase() === name.toLowerCase());
         if (existing) {
+          existing.code = code;
           existing.name = name;
-          existing.defaultCapacity = defaultCapacity;
-          existing.targetGrades = targetGrades;
           if (teacher) existing.teacher = teacher;
         } else {
           const id = 'c_' + Date.now() + '_' + index;
@@ -1450,8 +1449,24 @@ class AppController {
             code,
             name,
             teacher,
-            defaultCapacity,
-            targetGrades,
+            isActiveForProject: true
+          });
+        }
+        addedCount++;
+      } else if (parts.length === 1 && parts[0].length > 0) {
+        // Yalnızca ders adı yazılmışsa
+        const name = parts[0];
+        const code = name.substring(0, 3).toUpperCase();
+        let existing = this.courses.find(c => c.name.toLowerCase() === name.toLowerCase());
+        if (existing) {
+          existing.name = name;
+        } else {
+          const id = 'c_' + Date.now() + '_' + index;
+          this.courses.push({
+            id,
+            code,
+            name,
+            teacher: '',
             isActiveForProject: true
           });
         }

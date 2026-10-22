@@ -1042,30 +1042,31 @@
     </div>
   </div>
 
-  <!-- Toplu Ders Yükleme Modalı -->
+  <!-- Toplu Ders Havuzuna Yükleme Modali -->
   <div id="modalBulkCourseImport" class="modal-backdrop">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>📄 Toplu Ders Yükleme (CSV / Metin)</h3>
+        <h3>📄 Toplu Ders Havuzuna Yükleme (CSV / Metin)</h3>
         <button class="modal-close" onclick="app.closeModal('modalBulkCourseImport')">&times;</button>
       </div>
       <div class="modal-body">
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-          Ders listenizi her satıra bir ders gelecek şekilde yapıştırın.<br>
-          Format: <code>Kod,Ders Adı,Kontenjan,Kademeler,Öğretmen(Opsiyonel)</code><br>
-          Örnek:<br>
-          <code>MAT,Matematik,5,9-10-11-12</code><br>
-          <code>FIZ,Fizik,4,9-10-11-12</code><br>
-          <code>FEL,Felsefe,3,10-11</code><br>
-          <code>BIL,Bilişim ve Kodlama,4,9-10,Burak Hoca</code>
+          Okul ders havuzuna eklenecek ders listenizi her satıra bir ders gelecek şekilde yapıştırın.<br>
+          <strong>Format:</strong> <code>Kod, Ders Adı, Öğretmen (Opsiyonel)</code> veya sadece <code>Kod, Ders Adı</code><br>
+          <span style="display: block; margin-top: 0.35rem; color: #4f46e5; font-size: 0.8rem; font-weight: 600;">ℹ️ Kontenjan ve kademe kısıtlamasına gerek yoktur; dersler genel havuzda toplanır, sınıf kontenjanlarını rehber öğretmenler belirler.</span><br>
+          <strong>Örnek:</strong><br>
+          <code>MAT, Matematik, Ahmet Yılmaz</code><br>
+          <code>FIZ, Fizik, Ayşe Kaya</code><br>
+          <code>KIM, Kimya</code><br>
+          <code>BIY, Biyoloji</code><br>
+          <code>NES-10, Nesne Tabanlı Programlama, Uğur Demir</code>
         </p>
-        <textarea id="bulkCourseImportTextarea" class="form-control" rows="8" placeholder="MAT,Matematik,5,9-10-11-12&#10;FIZ,Fizik,4,9-10-11-12&#10;KIM,Kimya,4,9-10-11-12&#10;BIY,Biyoloji,4,9-10-11-12"></textarea>
+        <textarea id="bulkCourseImportTextarea" class="form-control" rows="8" placeholder="MAT, Matematik, Ahmet Yılmaz&#10;FIZ, Fizik, Ayşe Kaya&#10;KIM, Kimya&#10;BIY, Biyoloji&#10;NES-10, Nesne Tabanlı Programlama"></textarea>
         <div style="margin-top: 1.25rem;">
           <button type="button" class="btn btn-primary btn-block" onclick="app.processBulkCourseImport()">
-            Toplu Dersleri İçe Aktar
+            Toplu Dersleri Havuza Aktar
           </button>
-        </div>
-      </div>
+        </div></div>
     </div>
   </div>
 
@@ -1147,19 +1148,20 @@
       </div>
       <div class="modal-body">
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-          Excel veya metin dosyanızdan kopyalayıp buraya yapıştırın. Sistem sınıfları ve dersleri otomatik olarak eşleştirecektir.<br>
-          Format: <code>Sınıf,Ders Kodu,Kontenjan</code> veya <code>Sınıf,Ders Adı,Kontenjan</code>
+          Excel veya metin listenizden kopyalayıp yapıştırarak sınıflarla dersleri tek seferde eşleştirin.<br>
+          <strong>Format:</strong> <code>Sınıf, Ders Kodu</code> veya <code>Sınıf, Ders Adı</code><br>
+          <span style="color: #4f46e5; font-size: 0.8rem; font-weight: 600;">ℹ️ Kontenjan belirtmenize gerek yoktur; dersler sınıfa atanır, kontenjanları sınıf öğretmenleri belirler.</span>
         </p>
 
         <div style="background: #f1f5f9; padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.8rem; margin-bottom: 0.75rem; border: 1px solid #e2e8f0;">
           <strong>Örnek Satırlar:</strong><br>
-          <code>10-A, NES-10, 8</code><br>
-          <code>10-A, MAT, 5</code><br>
-          <code>10-BB, NES-10, 10</code><br>
-          <code>10-BB, FIZ, 4</code>
+          <code>10-A, NES-10</code><br>
+          <code>10-A, MAT</code><br>
+          <code>10-BB, NES-10</code><br>
+          <code>10-BB, FIZ</code>
         </div>
 
-        <textarea id="bulkClassCourseTextarea" class="form-control" rows="8" placeholder="10-A, NES-10, 8&#10;10-A, MAT, 5&#10;10-BB, NES-10, 10&#10;10-BB, FIZ, 4"></textarea>
+        <textarea id="bulkClassCourseTextarea" class="form-control" rows="8" placeholder="10-A, NES-10&#10;10-A, MAT&#10;10-BB, NES-10&#10;10-BB, FIZ"></textarea>
 
         <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
           <button type="button" class="btn btn-outline btn-sm" onclick="app.fillBulkClassCourseSample()">
