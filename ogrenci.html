@@ -184,6 +184,116 @@
     .portal-switch-link a:hover {
       text-decoration: underline;
     }
+  
+    /* Mobil Açılışta Ekrana Tam Sığma Kuralları */
+    @media (max-width: 640px) {
+      .student-login-wrap {
+        min-height: calc(100dvh - 75px) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0.4rem 0.65rem !important;
+      }
+
+      .student-login-card {
+        padding: 1.1rem 1.1rem 1.25rem !important;
+        border-radius: var(--radius-md) !important;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+        width: 100% !important;
+        max-width: 380px !important;
+        margin: auto !important;
+      }
+
+      .student-logo-box {
+        width: 48px !important;
+        height: 48px !important;
+        margin: 0 auto 0.35rem !important;
+        border-radius: 12px !important;
+        padding: 3px !important;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1) !important;
+      }
+
+      .student-badge-role {
+        font-size: 0.72rem !important;
+        padding: 0.2rem 0.55rem !important;
+        margin-bottom: 0.3rem !important;
+      }
+
+      .student-login-card h2 {
+        font-size: 1.18rem !important;
+        margin-bottom: 0.2rem !important;
+        line-height: 1.2 !important;
+      }
+
+      .student-login-card p.subtitle {
+        font-size: 0.76rem !important;
+        line-height: 1.35 !important;
+        margin-bottom: 0.75rem !important;
+        color: var(--text-muted) !important;
+      }
+
+      .auth-form .form-group {
+        margin-bottom: 0.55rem !important;
+      }
+
+      .auth-form label {
+        font-size: 0.78rem !important;
+        margin-bottom: 0.2rem !important;
+      }
+
+      .auth-form .form-control {
+        padding: 0.55rem 0.75rem !important;
+        font-size: 0.95rem !important;
+        height: auto !important;
+      }
+
+      .auth-form button[type="submit"] {
+        padding: 0.65rem 1rem !important;
+        font-size: 0.95rem !important;
+        margin-top: 0.4rem !important;
+      }
+
+      .portal-switch-link {
+        margin-top: 0.65rem !important;
+        font-size: 0.78rem !important;
+      }
+
+      /* Öğrenci Sonuç / Tercih Paneli Mobil */
+      .student-placed-hero {
+        padding: 1.25rem 1rem !important;
+        margin-bottom: 1.25rem !important;
+      }
+      .placed-course-title {
+        font-size: 1.25rem !important;
+      }
+      .preference-step-card {
+        padding: 1rem 0.85rem !important;
+      }
+    }
+
+    /* Dikey Yüksekliği Düşük Telefonlar İçin (Açılışta Kaydırmasız Görünüm) */
+    @media (max-height: 720px) and (max-width: 640px) {
+      .student-logo-box {
+        width: 36px !important;
+        height: 36px !important;
+        margin: 0 auto 0.25rem !important;
+        padding: 2px !important;
+      }
+      .student-badge-role {
+        margin-bottom: 0.2rem !important;
+      }
+      .student-login-card h2 {
+        font-size: 1.05rem !important;
+      }
+      .student-login-card p.subtitle {
+        font-size: 0.72rem !important;
+        margin-bottom: 0.45rem !important;
+      }
+      .student-login-card {
+        padding: 0.85rem 0.95rem 1rem !important;
+      }
+    }
+
   </style>
 
   <!-- Firebase v8 Compat SDK -->
