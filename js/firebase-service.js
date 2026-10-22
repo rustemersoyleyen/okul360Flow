@@ -524,6 +524,18 @@ class DataService {
     }
   }
 
+  async saveResults(results) {
+    this.setLocal('results', results);
+    if (this.isFirebaseReady) {
+      try {
+        await this.db.collection('system').doc('results').set(results);
+      } catch (e) {
+        console.error('Firebase saveResults hatasi:', e);
+      }
+    }
+    return results;
+  }
+
   // Sınıf Dağıtımını İptal Et (Hiç yapılmamış say)
   async cancelClassDistribution(classId) {
     const allResults = await this.getResults();

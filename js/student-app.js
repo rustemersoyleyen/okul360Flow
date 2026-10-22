@@ -15,7 +15,7 @@ class StudentApp {
     await window.dataService.init();
     await this.reloadAllData();
     this.updateDbStatusBadge();
-    this.checkSession();
+    await this.checkSession();
   }
 
   async reloadAllData() {
@@ -47,7 +47,7 @@ class StudentApp {
     }
   }
 
-  checkSession() {
+  async checkSession() {
     const saved = sessionStorage.getItem('active_student_session') || sessionStorage.getItem('active_session');
     if (saved) {
       try {
@@ -55,7 +55,7 @@ class StudentApp {
         if (sess.role === 'student' || sess.number) {
           const st = this.students.find(s => s.id === sess.id || s.number === sess.number);
           if (st) {
-            this.loginSuccess(st, false);
+            await this.loginSuccess(st, false);
             return;
           }
         }
@@ -106,10 +106,10 @@ class StudentApp {
       return;
     }
 
-    this.loginSuccess(st, true);
+    await this.loginSuccess(st, true);
   }
 
-  loginSuccess(student, saveSession = true) {
+  async loginSuccess(student, saveSession = true) {
     this.currentStudent = student;
     if (saveSession) {
       sessionStorage.setItem('active_student_session', JSON.stringify({
@@ -127,7 +127,7 @@ class StudentApp {
     if (dashSec) dashSec.style.display = 'block';
     if (navLogout) navLogout.style.display = 'inline-flex';
 
-    this.renderStudentView(student);
+    await this.renderStudentView(student);
     this.showToast(`Hoş geldin, ${student.name}!`, "success");
   }
 
@@ -147,7 +147,7 @@ class StudentApp {
     this.handleLogin();
   }
 
-  renderStudentView(student) {
+  async renderStudentView(student) {
     const studentClass = this.classes.find(c => c.id === student.classId);
     const className = studentClass ? studentClass.name : "Belirsiz";
     const grade = studentClass ? studentClass.grade : "9";
@@ -360,7 +360,7 @@ class StudentApp {
       const updated = await window.dataService.saveStudentChoices(this.currentStudent.id, choices);
       this.currentStudent = updated;
       await this.reloadAllData();
-      this.renderStudentView(updated);
+      await this.renderStudentView(updated);
       this.showToast("🎉 Tercihleriniz başarıyla kaydedildi! Sınıf öğretmeniniz dağıtımı tamamladığında sonucunuz bu ekranda görünecektir.", "success");
     } catch (err) {
       console.error(err);

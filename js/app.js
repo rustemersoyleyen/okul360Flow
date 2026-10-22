@@ -707,6 +707,7 @@ class AppController {
       const savedResult = await window.dataService.saveClassDistributionResult(classId, result);
       await this.reloadAllData();
       this.renderTeacherResultsView(this.currentTeacherClass);
+      this.renderAdminView(); // Istatistikleri aninda guncelle
       this.showToast("🎉 Dağıtım başarıyla tamamlandı ve kaydedildi!", "success");
     } catch (err) {
       console.error(err);
@@ -717,13 +718,18 @@ class AppController {
   renderTeacherResultsView(classObj) {
     const classResult = this.results[classObj.id];
     const statsSection = document.getElementById('distributionStatsSection');
+    const btnCancel = document.getElementById('btnCancelDistribution');
 
     if (!classResult || !classResult.assignedStudents) {
-      statsSection.style.display = 'none';
+      if (statsSection) statsSection.style.display = 'none';
+      if (btnCancel) btnCancel.style.display = 'none';
+      const tbody = document.getElementById('resultsTableBody');
+      if (tbody) tbody.innerHTML = '';
       return;
     }
 
-    statsSection.style.display = 'block';
+    if (statsSection) statsSection.style.display = 'block';
+    if (btnCancel) btnCancel.style.display = 'inline-flex';
 
     // İstatistikler
     const totalStudents = classResult.totalStudents || (classResult.assignedStudents.length + (classResult.unassignedStudents || []).length);
@@ -865,45 +871,68 @@ class AppController {
   }
 
   // Sınıf Dağıtımını İptal Et (Hiç olmamış gibi kabul edilir)
-  async handleCancelClassDistribution() {
+  // Sinif Dagitimini Iptal Et (Tercihler korunur, yerlestirmeler sifirlanir)
+  async handleCancelDistribution() {
     if (!this.currentTeacherClass) return;
     const classId = this.currentTeacherClass.id;
     const className = this.currentTeacherClass.name;
 
     const confirmed = confirm(
-      `⚠️ DİKKAT!\n\n"${className}" sınıfına ait yapılmış olan proje ödevi dağıtımını tamamen İPTAL etmek istediğinize emin misiniz?\n\n` +
-      `• Bu işlem sonucunda yapılan tüm yerleştirmeler sıfırlanacaktır.\n` +
-      `• Dağıtım hiç yapılmamış gibi kabul edilecek ve öğrencilerin tercih formları tekrar açılacaktır.\n\n` +
-      `İptal işlemini onaylıyor musunuz?`
+      `DİKKAT: "${className}" sınıfının proje dağıtım sonucunu iptal etmek üzeresiniz!\n\n` +
+      `✔ Öğrencilerin yapmış olduğu ders tercihleri (1-5 tercih) KESİNLİKLE SİLİNMEZ, korunur.\n` +
+      `✔ Yalnızca ders yerleştirmesi ve dağıtım sonucu sıfırlanır.\n\n` +
+      `Dağıtımı iptal etmek istediğinizi onaylıyor musunuz?`
     );
 
     if (!confirmed) return;
 
     try {
+      // 1. Veritabanindan ve yerelden dagitim sonucunu sil
       await window.dataService.cancelClassDistribution(classId);
       await this.reloadAllData();
 
+      // 2. Guncel sinif nesnesini al
       const cl = this.classes.find(c => c.id === classId);
       if (cl) this.currentTeacherClass = cl;
 
+      // 3. Konsolu ve iptal butonunu gizle
       const consoleEl = document.getElementById('distributionConsole');
       if (consoleEl) {
         consoleEl.style.display = 'none';
         consoleEl.innerHTML = '';
       }
 
-      // Sonuç panelini ve istatistikleri sıfırla
+      const btnCancel = document.getElementById('btnCancelDistribution');
+      if (btnCancel) btnCancel.style.display = 'none';
+
+      const statsSection = document.getElementById('distributionStatsSection');
+      if (statsSection) statsSection.style.display = 'none';
+
+      const banner = document.getElementById('unassignedAlertBanner');
+      if (banner) banner.style.display = 'none';
+
+      const tbody = document.getElementById('resultsTableBody');
+      if (tbody) tbody.innerHTML = '';
+
+      // 4. Ogretmen ekranini yenile
       this.renderTeacherView(this.currentTeacherClass);
 
-      // İlk sekmeye (Öğrenci Tercihleri) geçiş yap
+      // 5. Ilk sekmeye (Ogrenci Tercihleri) gec
       const tabBtn = document.querySelector('#viewTeacher .tab-btn:first-child');
-      this.switchTeacherTab('tabTeacherStudents', tabBtn);
+      if (tabBtn) this.switchTeacherTab('tabTeacherStudents', tabBtn);
 
-      this.showToast(`"${className}" sınıfının dağıtımı başarıyla iptal edildi! Tercih formları yeniden açıldı.`, "info");
+      // 6. Idare panelindeki dagitilan sinif istatistigini ve rozetleri hemen guncelle!
+      this.renderAdminView();
+
+      this.showToast(`"${className}" sınıfının dağıtımı iptal edildi! Öğrenci tercihleri korundu, dilediğiniz zaman yeniden dağıtım yapabilirsiniz.`, "success");
     } catch (err) {
-      console.error("Dağıtım iptal hatası:", err);
+      console.error("Dagitim iptal hatasi:", err);
       this.showToast("Dağıtım iptal edilirken hata oluştu: " + err.message, "error");
     }
+  }
+
+  async handleCancelClassDistribution() {
+    return this.handleCancelDistribution();
   }
 
   exportTeacherStudentsTableCSV() {
@@ -2310,39 +2339,6 @@ class AppController {
   // ÖĞRETMEN: DAĞITIMI İPTAL ET (SIFIRLA - TERCİHLERİ KORU)
   // =========================================================================
 
-  async handleCancelDistribution() {
-    if (!this.currentTeacherClass) return;
-    const classId = this.currentTeacherClass.id;
-
-    const confirmed = confirm(
-      `DİKKAT: ${this.currentTeacherClass.name} sınıfının proje dağıtım sonucunu iptal etmek üzeresiniz!
-
-` +
-      `✓ Öğrencilerin yapmış olduğu ders tercihleri (1-5 tercih) KESİNLİKLE SİLİNMEZ, korunur.
-` +
-      `✓ Yalnızca ders yerleştirmesi ve dağıtım sonucu sıfırlanır.
-
-` +
-      `Dağıtımı iptal etmek istediğinizi onaylıyor musunuz?`
-    );
-    if (!confirmed) return;
-
-    // Sonuçlardan bu sınıfı kaldır
-    delete this.results[classId];
-    await window.dataService.saveResults(this.results);
-
-    if (window.dataService.isFirebaseReady) {
-      try {
-        await window.dataService.db.collection('results').doc(classId).delete();
-      } catch (e) {}
-    }
-
-    await this.reloadAllData();
-    await this.showTeacherView(this.currentTeacherClass, false);
-    this.showToast("✓ Dağıtım iptal edildi! Öğrenci tercihleri korundu, dilediğiniz zaman yeniden dağıtım yapabilirsiniz.", "success");
-  }
-
-  // =========================================================================
   // CSV İLE TOPLU SINIF-DERS EŞLEŞTİRME VE DIŞA AKTARMA
   // =========================================================================
 
