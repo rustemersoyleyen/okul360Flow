@@ -1098,8 +1098,6 @@ class AppController {
         <td><code>${c.code}</code></td>
         <td><strong>${c.name}</strong></td>
         <td>${c.teacher || '-'}</td>
-        <td>${c.defaultCapacity || 5} Kişi</td>
-        <td><span class="tag tag-secondary">${gradesText}</span></td>
         <td>
           <button class="btn btn-sm" style="${isActive ? 'background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;' : 'background:#fef2f2; color:#b91c1c; border:1px solid #fecaca;'}"
                   onclick="app.toggleCourseProjectStatus('${c.id}')" title="Tıklayarak proje durumunu değiştirin">
